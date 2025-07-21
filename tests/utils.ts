@@ -9,13 +9,13 @@ export interface TestValues {
   ammPda: PublicKey;
 
   // CreatePool
-  mint_a: Mint;
-  mint_b: Mint;
+  mint_a: PublicKey;
+  mint_b: PublicKey;
   poolPda: PublicKey;
   poolAuthority: Keypair;
-  mintLiquidity: Mint;
-  poolAccountA: TokenAccount;
-  poolAccountB: TokenAccount;
+  mintLiquidity: PublicKey;
+  poolAccountA: Keypair;
+  poolAccountB: Keypair;
 }
 
 export function createTestValues(): TestValues {
