@@ -28,6 +28,7 @@ export function createTestValues(): TestValues {
 
 export const expectRevert = async (promise: Promise<any>) => {
   try {
+    await promise;
     // 如果到这里，说明操作成功了，但我们期望失败
     throw new Error("Expected operation to fail, but it succeeded");
   } catch (error: any) {

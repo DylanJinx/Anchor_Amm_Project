@@ -6,7 +6,7 @@ import { MyAmmProject } from "../target/types/my_amm_project";
 describe("my_amm_project", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
-  // const provider = anchor.Anchor.AnchorProvider.env();
+  // const provider = anchor.AnchorProvider.env();
   // anchor.setProvider(provider);
 
   const program = anchor.workspace.MyAmmProject as Program<MyAmmProject>;
