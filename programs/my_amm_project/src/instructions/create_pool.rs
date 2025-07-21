@@ -74,11 +74,11 @@ pub struct CreatePool<'info>{
         bump,
         mint::decimals = 6,
         mint::authority = pool_authority,
-
     )]
     pub mint_liquidity: Box<Account<'info, Mint>>,
 
     pub mint_a: Box<Account<'info, Mint>>,
+    
     pub mint_b: Box<Account<'info, Mint>>,
 
     // - 你有一个钱包地址：wallet_address

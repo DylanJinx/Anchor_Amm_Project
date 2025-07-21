@@ -1,6 +1,16 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Keypair, PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+  type Connection,
+  Keypair,
+  PublicKey,
+  type Signer,
+} from "@solana/web3.js";
+import {
+  createMint,
+  getAssociatedTokenAddressSync,
+  getOrCreateAssociatedTokenAccount,
+  mintTo,
+} from "@solana/spl-token";
 import { BN } from "bn.js";
 
 // 需要Keypair的情况：
@@ -111,4 +121,83 @@ export const expectRevert = async (promise: Promise<any>) => {
     // 其他错误都是预期的，正常返回
     return;
   }
+};
+
+export const mintingTokens = async ({
+  connection, // solana 网络连接
+  creator, // 创建代币的人（需要支付费用）
+  holder = creator, // 持有代币的人（默认是creator)
+  mint_a, // 代币A的密钥对
+  mint_b, // 代币B的密钥对
+  mintedAmount = 100, // 给holder铸造多少个币（默认100）
+  decimals = 6, // 代币小数位数（默认6位，像USDC）
+}: {
+  connection: Connection;
+  creator: Signer;
+  holder?: Signer;
+  mint_a: Keypair;
+  mint_b: Keypair;
+  mintedAmount?: number;
+  decimals?: number;
+}) => {
+  // 第1步：给creator充值SOL
+  // - 创建代币、创建账户都需要SOL作为"燃料费"
+  // - 10 ** 10 = 100亿lamports = 10 SOL
+  // - requestAirdrop: 在测试网络中免费获得SOL
+  // - confirmTransaction: 等待交易确认完成
+  await connection.confirmTransaction(
+    await connection.requestAirdrop(creator.publicKey, 10 ** 10)
+  );
+
+  // 第2步：创建两种代币
+  await createMint(
+    connection, // 网络连接
+    creator, // 谁来支付创建费用
+    creator.publicKey, // mint authority（谁有权限铸造代币）
+    creator.publicKey, // freeze authority（谁有权限冻结代币）
+    decimals, // 小数位数
+    mint_a // 代币的身份
+  );
+  await createMint(
+    connection, // 网络连接
+    creator, // 谁来支付创建费用
+    creator.publicKey, // mint authority（谁有权限铸造代币）
+    creator.publicKey, // freeze authority（谁有权限冻结代币）
+    decimals, // 小数位数
+    mint_b // 代币的身份
+  );
+
+  // 第3步：为holder创建代币账户
+  await getOrCreateAssociatedTokenAccount(
+    connection, // 网络连接
+    holder, // 谁来支付创建费用
+    mint_a.publicKey, // 存储哪种代币
+    holder.publicKey, // 谁拥有这个代币账户
+    true // allowOwnerOffCurve参数
+  );
+  await getOrCreateAssociatedTokenAccount(
+    connection,
+    holder,
+    mint_b.publicKey,
+    holder.publicKey,
+    true
+  );
+
+  // 第4步：向代币账户铸造代币
+  await mintTo(
+    connection,
+    creator, // 谁来签名（必须是mint authority）
+    mint_a.publicKey, // 哪种代币的mint
+    getAssociatedTokenAddressSync(mint_a.publicKey, holder.publicKey, true), // 目标账户
+    creator.publicKey, // mint authority
+    mintedAmount * 10 ** decimals // 铸造数量（注意小数位转换）
+  );
+  await mintTo(
+    connection,
+    creator, // 谁来签名（必须是mint authority）
+    mint_b.publicKey, // 哪种代币的mint
+    getAssociatedTokenAddressSync(mint_b.publicKey, holder.publicKey, true), // 目标账户
+    creator.publicKey, // mint authority
+    mintedAmount * 10 ** decimals // 铸造数量（注意小数位转换）
+  );
 };
