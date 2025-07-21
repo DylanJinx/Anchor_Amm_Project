@@ -7,6 +7,15 @@ export interface TestValues {
   fee: number;
   admin: Keypair;
   ammPda: PublicKey;
+
+  // CreatePool
+  mint_a: Mint;
+  mint_b: Mint;
+  poolPda: PublicKey;
+  poolAuthority: Keypair;
+  mintLiquidity: Mint;
+  poolAccountA: TokenAccount;
+  poolAccountB: TokenAccount;
 }
 
 export function createTestValues(): TestValues {

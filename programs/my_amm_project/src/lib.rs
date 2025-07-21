@@ -23,6 +23,10 @@ pub mod my_amm_project {
     pub fn create_amm(ctx: Context<CreateAmm>, id: Pubkey, fee: u16) -> Result<()> {
         instructions::create_amm(ctx, id, fee)
     }
+
+    pub fn create_pool(ctx: Context<CreatePool>) -> Result<()> {
+        instructions::create_pool(ctx)
+    }
 }
 
 #[derive(Accounts)]
