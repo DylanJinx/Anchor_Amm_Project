@@ -35,6 +35,13 @@ pub mod my_amm_project {
     ) -> Result<()> {
         instructions::deposit_liquidity(ctx, amount_a, amount_b)
     }
+
+    pub fn withdraw_liquidity(
+        ctx: Context<WithdrawLiquidity>,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::withdraw_liquidity(ctx, amount)
+    }
 }
 
 #[derive(Accounts)]
