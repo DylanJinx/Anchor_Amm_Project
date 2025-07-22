@@ -33,6 +33,40 @@ pub fn swap_exact_tokens_for_tokens(
         input_amount
     };
 
+    // 应用交易费，用于计算输出
+    let amm = &ctx.accounts.amm;
+    let taxed_input = input - input * amm.fee as u64 / 10000; // fee: u16 but input: u64
+
+    let pool_a = &ctx.accounts.pool_account_a;
+    let pool_b = &ctx.accounts.pool_account_b;
+
+    let output = if swap_a {
+        // old_y - ((old_x * old_y) / (old_x + taxed_input)) 
+        // = taxed_input * old_y / (old_x + taxed_input)
+        I64F64::from_num(taxed_input)
+        .checked_mul(I64F64::from_num(pool_b.amount))
+        .unwrap()
+        .checked_div(
+            I64F64::from_num(pool_a.amount)
+            .checked_add(I64F64::from_num(taxed_input))
+            .unwrap(),
+        )
+        .unwrap()
+    } else {
+        I64F64::from_num(taxed_input)
+        .checked_mul(I64F64::from_num(pool_a.amount))
+        .unwrap()
+        .checked_div(
+            I64F64::from_num(pool_a.amount)
+            .checked_add(I64F64::from_num(taxed_input))
+            .unwrap(),
+        )
+        .unwrap()
+    }
+    .to_num::<u64>();
+
+
+
 
     Ok(())
 }
