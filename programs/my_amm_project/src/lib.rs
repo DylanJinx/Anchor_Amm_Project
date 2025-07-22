@@ -27,6 +27,14 @@ pub mod my_amm_project {
     pub fn create_pool(ctx: Context<CreatePool>) -> Result<()> {
         instructions::create_pool(ctx)
     }
+
+    pub fn deposit_liquidity(
+        ctx: Context<DepositLiquidity>,
+        amount_a: u64,
+        amount_b: u64,
+    ) -> Result<()> {
+        instructions::deposit_liquidity(ctx, amount_a, amount_b)
+    }
 }
 
 #[derive(Accounts)]
