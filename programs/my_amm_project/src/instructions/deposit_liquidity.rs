@@ -107,8 +107,29 @@ pub fn deposit_liquidity(
         amount_b,
     )?;
 
+    // 给用户铸造LP代币
+    let authority_bump = ctx.bumps.pool_authority;
+    let authority_seeds = &[
+        &ctx.accounts.pool.amm.to_bytes(),
+        &ctx.accounts.mint_a.key().to_bytes(),
+        &ctx.accounts.mint_b.key().to_bytes(),
+        AUTHORITY_SEED,
+        &[authority_bump],
+    ];
+    let signer_seeds = &[&authority_seeds[..]];
 
-
+    token::mint_to(
+        CpiContext::new_with_signer(
+            ctx.accounts.token_program.to_account_info(),
+            MintTo {
+                mint: ctx.accounts.mint_liquidity.to_account_info(),
+                to: ctx.accounts.depositor_account_liquidity.to_account_info(),
+                authority: ctx.accounts.pool_authority.to_account_info(),
+            },
+            signer_seeds,
+        ),
+        liquidity,
+    )?;
 
     Ok(())
 }
