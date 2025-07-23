@@ -5,3 +5,5 @@ target
 node_modules
 test-ledger
 .yarn
+recovery-keypair.json
+.env
