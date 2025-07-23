@@ -57,7 +57,7 @@ pub fn swap_exact_tokens_for_tokens(
         .checked_mul(I64F64::from_num(pool_a.amount))
         .unwrap()
         .checked_div(
-            I64F64::from_num(pool_a.amount)
+            I64F64::from_num(pool_b.amount)
             .checked_add(I64F64::from_num(taxed_input))
             .unwrap(),
         )
@@ -65,8 +65,92 @@ pub fn swap_exact_tokens_for_tokens(
     }
     .to_num::<u64>();
 
+    if output < min_output_amount {
+        return err!(TutorialError::OutputTooSmall);
+    }
 
+    // 计算交易前的不变量
+    let invariant = pool_a.amount * pool_b.amount;
 
+    // swap
+    let authority_bump = ctx.bumps.pool_authority;
+    let authority_seeds = &[
+        &ctx.accounts.pool.amm.to_bytes(),
+        &ctx.accounts.pool.mint_a.to_bytes(),
+        &ctx.accounts.pool.mint_b.to_bytes(),
+        AUTHORITY_SEED,
+        &[authority_bump],
+    ];
+    let signer_seeds = &[&authority_seeds[..]];
+    if swap_a {
+        // 用户的token_a → 池子
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.trader_account_a.to_account_info(),
+                    to: ctx.accounts.pool_account_a.to_account_info(),
+                    authority: ctx.accounts.trader.to_account_info(),
+                }
+            ),
+            input,
+        )?;
+
+        // 池子的token_b → 用户 
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.pool_account_b.to_account_info(),
+                    to: ctx.accounts.trader_account_b.to_account_info(),
+                    authority: ctx.accounts.pool_authority.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            output,
+        )?;
+    } else {
+        // 用户的token_b → 池子
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.trader_account_b.to_account_info(),
+                    to: ctx.accounts.pool_account_b.to_account_info(),
+                    authority: ctx.accounts.trader.to_account_info(),
+                }
+            ),
+            input,
+        )?;
+
+        // 池子的token_a → 用户 
+        token::transfer(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.pool_account_a.to_account_info(),
+                    to: ctx.accounts.trader_account_a.to_account_info(),
+                    authority: ctx.accounts.pool_authority.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            output,
+        )?;
+    }
+
+    msg!(
+        "Traded {} tokens ({} after fees) for {}",
+        input,
+        taxed_input,
+        output
+    );
+
+    // 验证不变式仍然成立
+    ctx.accounts.pool_account_a.reload()?;
+    ctx.accounts.pool_account_b.reload()?;
+    if invariant > ctx.accounts.pool_account_a.amount * ctx.accounts.pool_account_b.amount {
+        return err!(TutorialError::InvariantViolated);
+    }
 
     Ok(())
 }
