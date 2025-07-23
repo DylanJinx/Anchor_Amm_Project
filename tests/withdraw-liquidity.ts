@@ -144,12 +144,21 @@ describe("Withdraw Liquidity", () => {
     // 获取提取前的余额
     const beforeLPBalance = (await getAccount(connection, lpTokenAddress))
       .amount;
+    console.log(`beforeLPBalance: ${beforeLPBalance}`);
+
     const beforeUserA = (await getAccount(connection, userTokenA)).amount;
+    console.log(`beforeUserA: ${beforeUserA}`);
+
     const beforeUserB = (await getAccount(connection, userTokenB)).amount;
+    console.log(`beforeUserB: ${beforeUserB}`);
+
     const beforePoolA = (await getAccount(connection, values.poolAccountA))
       .amount;
+    console.log(`beforePoolA: ${beforePoolA}`);
+
     const beforePoolB = (await getAccount(connection, values.poolAccountB))
       .amount;
+    console.log(`beforePoolB: ${beforePoolB}`);
 
     // 提取所有LP代币
     const withdrawAmount = beforeLPBalance;
@@ -183,9 +192,16 @@ describe("Withdraw Liquidity", () => {
 
     // 验证用户收到代币
     const afterUserA = (await getAccount(connection, userTokenA)).amount;
+    console.log(`afterUserA: ${afterUserA}`);
+
     const afterUserB = (await getAccount(connection, userTokenB)).amount;
+    console.log(`afterUserB: ${afterUserB}`);
+
     const receivedA = afterUserA - beforeUserA;
+    console.log(`receivedA: ${receivedA}`);
+
     const receivedB = afterUserB - beforeUserB;
+    console.log(`receivedB: ${receivedB}`);
 
     expect(Number(receivedA)).to.be.greaterThan(0);
     expect(Number(receivedB)).to.be.greaterThan(0);
@@ -193,13 +209,19 @@ describe("Withdraw Liquidity", () => {
     // 验证池子代币减少
     const afterPoolA = (await getAccount(connection, values.poolAccountA))
       .amount;
+    console.log(`afterPoolA: ${afterPoolA}`);
+
     const afterPoolB = (await getAccount(connection, values.poolAccountB))
       .amount;
+    console.log(`afterPoolB: ${afterPoolB}`);
+
     expect(Number(beforePoolA - afterPoolA)).to.equal(Number(receivedA));
     expect(Number(beforePoolB - afterPoolB)).to.equal(Number(receivedB));
 
     // 验证比例正确 (应该接近初始的1:2比例)
     const ratio = Number(receivedB) / Number(receivedA);
+    console.log(`ratio: ${ratio}`);
+
     expect(ratio).to.be.greaterThan(1.8); // 考虑舍入误差
     expect(ratio).to.be.lessThan(2.2);
 
@@ -220,10 +242,15 @@ describe("Withdraw Liquidity", () => {
 
     const beforeLPBalance = (await getAccount(connection, lpTokenAddress))
       .amount;
+    console.log(`beforeLPBalance: ${beforeLPBalance}`);
+
     const beforePoolA = (await getAccount(connection, values.poolAccountA))
       .amount;
+    console.log(`beforePoolA: ${beforePoolA}`);
+
     const beforePoolB = (await getAccount(connection, values.poolAccountB))
       .amount;
+    console.log(`beforePoolB: ${beforePoolB}`);
 
     // 提取一半的LP代币
     const withdrawAmount = beforeLPBalance / BigInt(2);
@@ -261,6 +288,8 @@ describe("Withdraw Liquidity", () => {
     // 验证剩余LP代币
     const afterLPBalance = (await getAccount(connection, lpTokenAddress))
       .amount;
+    console.log(`afterLPBalance: ${afterLPBalance}`);
+
     expect(Number(afterLPBalance)).to.be.approximately(
       Number(beforeLPBalance - withdrawAmount),
       10 // 允许小的舍入误差
@@ -269,8 +298,11 @@ describe("Withdraw Liquidity", () => {
     // 验证池子剩余流动性约为一半
     const afterPoolA = (await getAccount(connection, values.poolAccountA))
       .amount;
+    console.log(`afterPoolA: ${afterPoolA}`);
+
     const afterPoolB = (await getAccount(connection, values.poolAccountB))
       .amount;
+    console.log(`afterPoolB: ${afterPoolB}`);
 
     expect(Number(afterPoolA)).to.be.approximately(
       Number(beforePoolA) / 2,
@@ -291,7 +323,10 @@ describe("Withdraw Liquidity", () => {
   it("Success: Multiple users withdraw liquidity", async () => {
     // 创建第二个用户
     const user2 = Keypair.generate();
-    const signature = await connection.requestAirdrop(user2.publicKey, 10 ** 10);
+    const signature = await connection.requestAirdrop(
+      user2.publicKey,
+      10 ** 10
+    );
     const latestBlockhash = await connection.getLatestBlockhash();
     await connection.confirmTransaction({
       signature,
@@ -359,6 +394,8 @@ describe("Withdraw Liquidity", () => {
         )
       )
     ).amount;
+    console.log(`user1LP: ${user1LP}`);
+
     const user2LP = (
       await getAccount(
         connection,
@@ -369,6 +406,7 @@ describe("Withdraw Liquidity", () => {
         )
       )
     ).amount;
+    console.log(`user2LP: ${user2LP}`);
 
     // const totalLP = user1LP + user2LP; // Not used
 
@@ -386,7 +424,10 @@ describe("Withdraw Liquidity", () => {
     );
 
     const beforeUser1A = (await getAccount(connection, user1TokenA)).amount;
+    console.log(`beforeUser1A: ${beforeUser1A}`);
+
     const beforeUser1B = (await getAccount(connection, user1TokenB)).amount;
+    console.log(`beforeUser1B: ${beforeUser1B}`);
 
     await program.methods
       .withdrawLiquidity(new anchor.BN(user1Withdraw.toString()))
@@ -427,7 +468,10 @@ describe("Withdraw Liquidity", () => {
     );
 
     const beforeUser2A = (await getAccount(connection, user2TokenA)).amount;
+    console.log(`beforeUser2A: ${beforeUser2A}`);
+
     const beforeUser2B = (await getAccount(connection, user2TokenB)).amount;
+    console.log(`beforeUser2B: ${beforeUser2B}`);
 
     await program.methods
       .withdrawLiquidity(new anchor.BN(user2LP.toString()))
@@ -571,8 +615,11 @@ describe("Withdraw Liquidity", () => {
     // 获取交换后的池子状态
     const poolAAfterSwap = (await getAccount(connection, values.poolAccountA))
       .amount;
+    console.log(`poolAAfterSwap: ${poolAAfterSwap}`);
+
     const poolBAfterSwap = (await getAccount(connection, values.poolAccountB))
       .amount;
+    console.log(`poolBAfterSwap: ${poolBAfterSwap}`);
 
     const lpTokenAddress = getAssociatedTokenAddressSync(
       values.mintLiquidity,
