@@ -50,22 +50,50 @@ pub fn deposit_liquidity(
         // 如果没有流动性，就按原样添加
         (amount_a, amount_b)
     } else {
-        // 池子不为空，必须按现有比例调整
+        // 池子不为空，必须按现有比例调整，同时确保不超过用户余额
         
-        // ratio = x / y
-        // let ratio = pool_a.amount * pool_b.amount;
         let ratio = I64F64::from_num(pool_a.amount).checked_div(I64F64::from_num(pool_b.amount)).unwrap();
-
-        if pool_a.amount > pool_b.amount {
-            (
-                I64F64::from_num(amount_b).checked_mul(ratio).unwrap().to_num::<u64>(),
-                amount_b
-            ) 
+        
+        // 选项1：以amount_a为基准，计算需要的amount_b
+        let option1_a = amount_a;
+        let option1_b = I64F64::from_num(amount_a).checked_div(ratio).unwrap().to_num::<u64>();
+        
+        // 选项2：以amount_b为基准，计算需要的amount_a
+        let option2_b = amount_b;
+        let option2_a = I64F64::from_num(amount_b).checked_mul(ratio).unwrap().to_num::<u64>();
+        
+        // 获取用户实际余额
+        let user_balance_a = ctx.accounts.depositor_account_a.amount;
+        let user_balance_b = ctx.accounts.depositor_account_b.amount;
+        
+        // 检查选项可行性
+        let option1_valid = option1_a <= user_balance_a && option1_b <= user_balance_b;
+        let option2_valid = option2_a <= user_balance_a && option2_b <= user_balance_b;
+        
+        if option1_valid && option2_valid {
+            // 两个都可行，选择存款量更大的
+            if option1_a + option1_b >= option2_a + option2_b {
+                (option1_a, option1_b)
+            } else {
+                (option2_a, option2_b)
+            }
+        } else if option1_valid {
+            (option1_a, option1_b)
+        } else if option2_valid {
+            (option2_a, option2_b)
         } else {
-            (
-                amount_a,
-                I64F64::from_num(amount_a).checked_div(ratio).unwrap().to_num::<u64>()
-            )
+            // 都不可行，计算在余额限制下的最优解
+            let constrained_by_a = (user_balance_a, I64F64::from_num(user_balance_a).checked_div(ratio).unwrap().to_num::<u64>());
+            let constrained_by_b = (I64F64::from_num(user_balance_b).checked_mul(ratio).unwrap().to_num::<u64>(), user_balance_b);
+            
+            if constrained_by_a.1 <= user_balance_b {
+                constrained_by_a
+            } else if constrained_by_b.0 <= user_balance_a {
+                constrained_by_b
+            } else {
+                // 极端情况，取能取到的最小值
+                (user_balance_a.min(constrained_by_b.0), user_balance_b.min(constrained_by_a.1))
+            }
         }
     };
 
