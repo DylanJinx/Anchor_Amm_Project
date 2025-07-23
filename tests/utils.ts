@@ -145,9 +145,13 @@ export const mintingTokens = async ({
   // - 10 ** 10 = 100亿lamports = 10 SOL
   // - requestAirdrop: 在测试网络中免费获得SOL
   // - confirmTransaction: 等待交易确认完成
-  await connection.confirmTransaction(
-    await connection.requestAirdrop(creator.publicKey, 10 ** 10)
-  );
+  const signature = await connection.requestAirdrop(creator.publicKey, 10 ** 10);
+  const latestBlockhash = await connection.getLatestBlockhash();
+  await connection.confirmTransaction({
+    signature,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
 
   // 第2步：创建两种代币
   await createMint(
@@ -199,5 +203,67 @@ export const mintingTokens = async ({
     getAssociatedTokenAddressSync(mint_b.publicKey, holder.publicKey, true), // 目标账户
     creator.publicKey, // mint authority
     mintedAmount * 10 ** decimals // 铸造数量（注意小数位转换）
+  );
+};
+
+// 只给用户铸造代币，不创建mint（mint已存在）
+export const mintTokensToUser = async ({
+  connection,
+  creator,
+  holder = creator,
+  mint_a,
+  mint_b,
+  mintedAmount = 100,
+  decimals = 6,
+}: {
+  connection: Connection;
+  creator: Signer;
+  holder?: Signer;
+  mint_a: Keypair;
+  mint_b: Keypair;
+  mintedAmount?: number;
+  decimals?: number;
+}) => {
+  // 给holder充值SOL
+  const signature = await connection.requestAirdrop(holder.publicKey, 10 ** 10);
+  const latestBlockhash = await connection.getLatestBlockhash();
+  await connection.confirmTransaction({
+    signature,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+  });
+
+  // 为holder创建代币账户
+  await getOrCreateAssociatedTokenAccount(
+    connection,
+    holder,
+    mint_a.publicKey,
+    holder.publicKey,
+    true
+  );
+  await getOrCreateAssociatedTokenAccount(
+    connection,
+    holder,
+    mint_b.publicKey,
+    holder.publicKey,
+    true
+  );
+
+  // 给holder铸造代币
+  await mintTo(
+    connection,
+    creator,
+    mint_a.publicKey,
+    getAssociatedTokenAddressSync(mint_a.publicKey, holder.publicKey, true),
+    creator.publicKey,
+    mintedAmount * 10 ** decimals
+  );
+  await mintTo(
+    connection,
+    creator,
+    mint_b.publicKey,
+    getAssociatedTokenAddressSync(mint_b.publicKey, holder.publicKey, true),
+    creator.publicKey,
+    mintedAmount * 10 ** decimals
   );
 };
