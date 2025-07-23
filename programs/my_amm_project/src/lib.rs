@@ -15,11 +15,6 @@ pub mod my_amm_project {
     pub use super::instructions::*;
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
-        Ok(())
-    }
-
     pub fn create_amm(ctx: Context<CreateAmm>, id: Pubkey, fee: u16) -> Result<()> {
         instructions::create_amm(ctx, id, fee)
     }
@@ -41,6 +36,15 @@ pub mod my_amm_project {
         amount: u64,
     ) -> Result<()> {
         instructions::withdraw_liquidity(ctx, amount)
+    }
+
+    pub fn swap_exact_tokens_for_tokens(
+        ctx: Context<SwapExactTokensForTokens>,
+        swap_a: bool,
+        input_amount: u64,
+        min_output_amount: u64,
+    ) -> Result<()> {
+        instructions::swap_exact_tokens_for_tokens(ctx, swap_a, input_amount, min_output_amount)
     }
 }
 
