@@ -6,20 +6,19 @@ AccountInfo 很小：
 
 ```rust
 pub struct AccountInfo<'a> {
-pub key: &'a Pubkey, // 8 字节指针
-pub lamports: Rc<RefCell<&'a mut u64>>, // 很小的引用
-pub data: Rc<RefCell<&'a mut [u8]>>, //
-指针，不是数据本身
-pub owner: &'a Pubkey, // 8 字节指针
-pub executable: bool, // 1 字节
-pub rent_epoch: Epoch, // 8 字节
+    pub key: &'a Pubkey, // 8 字节指针
+    pub lamports: Rc<RefCell<&'a mut u64>>, // 很小的引用
+    pub data: Rc<RefCell<&'a mut [u8]>>, //指针，不是数据本身
+    pub owner: &'a Pubkey, // 8 字节指针
+    pub executable: bool, // 1 字节
+    pub rent_epoch: Epoch, // 8 字节
 }
 // 总共大约 32-40 字节，非常小！
 
 Account<'info, T>很大：
 pub struct Account<'info, T> {
-info: AccountInfo<'info>, // 40 字节的 AccountInfo
-account: T, // 完整的反序列化数据！
+    info: AccountInfo<'info>, // 40 字节的 AccountInfo
+    account: T, // 完整的反序列化数据！
 }
 
 // 比如 Account<'info, Mint>:
